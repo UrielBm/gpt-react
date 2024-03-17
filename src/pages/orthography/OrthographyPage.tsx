@@ -3,10 +3,18 @@ import GptMessage from "../../components/chat-bubbles/GptMessage";
 import TextMessageBox from "../../components/chat-input-boxes/TextMessageBox";
 import TypingLoader from "../../components/loaders/TypingLoader";
 import MyMessage from "../../components/myMessage/MyMessage";
+import orthographyCaseUse from "../../helpers/OrthographyCaseUse";
+
+import GptMessageOrthography from "../../components/chat-bubbles/GptMessagesOrthography";
 
 interface Messages {
   message: string;
   isGpt: boolean;
+  options?: {
+    score: number;
+    errors: any[];
+    correctText: string;
+  };
 }
 
 const OrthographyPage = () => {
@@ -18,10 +26,24 @@ const OrthographyPage = () => {
       setIsLoading(true);
       setMesagges((prev) => [...prev, { message: message, isGpt: false }]);
 
-      //TODO: Usecase
+      const response = await orthographyCaseUse(message);
+      if (!response.ok) {
+        console.error("Sucedio un problema");
+      } else {
+        setMesagges((prev) => [
+          ...prev,
+          {
+            message: response.message,
+            isGpt: true,
+            options: {
+              score: response.score,
+              errors: response.errors,
+              correctText: response.correctText,
+            },
+          },
+        ]);
+      }
       setIsLoading(false);
-
-      //TODO: añadir el mensaje de backend de gpt
     } catch (error) {
       console.log(error);
     }
@@ -33,7 +55,13 @@ const OrthographyPage = () => {
           <GptMessage text="Hola soy el Bot de este chat, un gusto ayudarte con tu ortografía." />
           {mesagges.map((message, index) =>
             message.isGpt ? (
-              <GptMessage key={index} text="mensaje que viene de back" />
+              <GptMessageOrthography
+                key={index}
+                score={message.options!.score}
+                errors={message.options!.errors}
+                correctText={message.options!.correctText}
+                message={message.message}
+              />
             ) : (
               <MyMessage key={index} text={message.message} />
             )
